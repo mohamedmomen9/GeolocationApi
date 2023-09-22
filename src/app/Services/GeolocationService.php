@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Address;
 use GuzzleHttp\Client;
 
 class GeolocationService
@@ -18,12 +19,12 @@ class GeolocationService
         $this->url = env('POSITIONSTACK_URL', false);
     }
 
-    public function getGeolocationFromAddress($address)
+    public function getGeolocationFromAddress(Address $address)
     {
 
         $params = [
             'access_key' => $this->apiKey,
-            'query' => $address,
+            'query' => $address->getAddress(),
         ];
 
         try {
@@ -36,8 +37,7 @@ class GeolocationService
 
             return new \App\Geolocation($latitude, $longitude);
         } catch (\Exception $e) {
-            // Handle any errors, e.g., log them or throw an exception.
-            // You may want to create custom exception classes for better error handling.
+            // ToDo: add custom exception
             return null;
         }
     }

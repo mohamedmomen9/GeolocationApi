@@ -1,38 +1,44 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Console\Commands;
 
 use App\Address;
 use League\Csv\Writer;
-use Illuminate\Http\Request;
+use Illuminate\Console\Command;
 use App\Services\GeolocationService;
 
-class DistanceController extends Controller
+class CalculateDistancesCommand extends Command
 {
+    protected $signature = 'calculate:distances';
+    protected $description = 'Calculate distances between multiple addresses';
+
     protected $geolocationService;
 
     public function __construct(GeolocationService $geolocationService)
     {
+        parent::__construct();
         $this->geolocationService = $geolocationService;
     }
 
-    public function calculateDistances(Request $request)
+    public function handle()
     {
-        $addresses = $request->input('addresses', []);
-
-        if (empty($addresses)) {
-            return response()->json(['message' => 'No addresses provided.'], 400);
+        $addresses = [];
+        $input = $this->ask('Enter the first address:');
+        while($input !== 'q') {
+            $addresses[] = $input;
+            $input = $this->ask('Enter the next address or q to finish:');
+            if ($input === 'q') {
+                break;
+            }
         }
 
-        // Get the geolocation of the first address
-        $firstAddress = new Address($addresses[0]);
-        $firstGeolocation = $this->geolocationService->getGeolocationFromAddress($firstAddress);
+        $firstGeolocation = $this->geolocationService->getGeolocationFromAddress(new Address($addresses[0]));
 
-        if ($firstGeolocation === null) {
-            return response()->json(['message' => 'Unable to get geolocation for the first address.'], 500);
+        if (!$firstGeolocation) {
+            $this->error('Invalid first address');
+            return;
         }
 
-        // Calculate distances for other addresses
         $distances = [];
 
         for ($i = 1; $i < count($addresses); $i++) {
@@ -52,12 +58,15 @@ class DistanceController extends Controller
                 'distance' => $distance,
             ];
         }
-        $distances = collect($distances)->sortBy('distance');
+        $distanceCollection = collect($distances)->sortBy('distance');
+
+        $this->table(['Name', 'Address', 'Distance (km)'], $distanceCollection->toArray());
 
         //save the output as csv file
         $writer = Writer::createFromPath(storage_path("app/distance.csv"), 'w+');
-        $writer->insertAll($distances->toArray());
+        $writer->insertAll($distanceCollection->toArray());
 
-        return response()->json(['distances' => $distances, 'file' => storage_path("app/distance.csv")]);
+        $this->info('Distances saved to distances.csv');
+
     }
 }
