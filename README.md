@@ -94,9 +94,9 @@ To use the CalculateDistances command, open your terminal and navigate to the pr
 ```bash
 php artisan calculate:distances
 
-Enter an address (or type "done" to finish):
-123 Main St, City1, Country1
-Enter an address (or type "done" to finish):
-456 Elm St, City2, Country2
-Enter an address (or type "done" to finish):
-done
+Enter the first address:
+test - 123 Main St, City1, Country1
+Enter the next address or q to finish:
+test2 - 456 Elm St, City2, Country2
+Enter the next address or q to finish:
+q
